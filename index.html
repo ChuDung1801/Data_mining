@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ôn Tập Khai Phá Dữ Liệu</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.14);
+    --text: #e8e6f0;
+    --muted: #7a788a;
+    --accent: #7c6dfa;
+    --accent2: #fa6d8a;
+    --accent3: #6dfacc;
+    --accent4: #facc6d;
+    --mono: 'DM Mono', monospace;
+    --serif: 'Playfair Display', serif;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* --- Grain overlay --- */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+    opacity: 0.025;
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* --- Layout --- */
+  .layout { display: flex; min-height: 100vh; }
+
+  /* --- Sidebar --- */
+  .sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    z-index: 100;
+  }
+
+  .sidebar-header {
+    padding: 2rem 1.5rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-header .tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .sidebar-header h1 {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--text);
+  }
+
+  .sidebar-header p {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 0.4rem;
+  }
+
+  nav { padding: 1rem 0; flex: 1; }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.55rem 1.5rem;
+    cursor: pointer;
+    transition: all 0.18s;
+    border-left: 2px solid transparent;
+    color: var(--muted);
+    font-size: 13px;
+    user-select: none;
+  }
+
+  .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+
+  .nav-item.active {
+    color: var(--text);
+    border-left-color: var(--accent);
+    background: rgba(124,109,250,0.08);
+  }
+
+  .nav-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    min-width: 18px;
+  }
+
+  .nav-item.active .nav-num { color: var(--accent); }
+
+  /* --- Main content --- */
+  .main {
+    margin-left: 260px;
+    flex: 1;
+    padding: 3rem 3.5rem;
+    max-width: 900px;
+  }
+
+  .section { display: none; animation: fadeIn 0.25s ease; }
+  .section.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* --- Section header --- */
+  .sec-header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sec-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .sec-header h2 {
+    font-family: var(--serif);
+    font-size: 2rem;
+    font-weight: 900;
+    line-height: 1.2;
+    color: var(--text);
+  }
+
+  .sec-header p {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 0.6rem;
+    max-width: 560px;
+  }
+
+  /* --- Cards --- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.75rem;
+    margin-bottom: 1.25rem;
+    transition: border-color 0.2s;
+  }
+
+  .card:hover { border-color: var(--border2); }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-family: var(--mono);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title::before {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+
+  h3 {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    margin: 1.25rem 0 0.5rem;
+  }
+
+  h3:first-child { margin-top: 0; }
+
+  p { color: var(--muted); font-size: 14px; line-height: 1.75; }
+
+  /* --- Formula blocks --- */
+  .formula {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 0.85rem 1.25rem;
+    margin: 0.85rem 0;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent3);
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .formula.warn { border-left-color: var(--accent4); color: var(--accent4); }
+  .formula.pink { border-left-color: var(--accent2); color: var(--accent2); }
+
+  /* --- Steps --- */
+  .steps { display: flex; flex-direction: column; gap: 0.75rem; margin: 1rem 0; }
+
+  .step {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .step-n {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    background: rgba(124,109,250,0.15);
+    border: 1px solid rgba(124,109,250,0.3);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .step-body { font-size: 14px; color: var(--muted); line-height: 1.7; }
+  .step-body strong { color: var(--text); font-weight: 500; }
+
+  /* --- Lists --- */
+  ul, ol { padding-left: 1.2rem; }
+  li { font-size: 14px; color: var(--muted); line-height: 1.7; margin-bottom: 0.3rem; }
+  li strong { color: var(--text); font-weight: 500; }
+
+  /* --- Badges --- */
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-family: var(--mono);
+    padding: 2px 9px;
+    border-radius: 4px;
+    margin: 2px 3px 2px 0;
+    font-weight: 500;
+    vertical-align: middle;
+  }
+
+  .b-purple { background: rgba(124,109,250,0.15); color: var(--accent); border: 1px solid rgba(124,109,250,0.25); }
+  .b-green  { background: rgba(109,250,204,0.1);  color: var(--accent3); border: 1px solid rgba(109,250,204,0.2); }
+  .b-yellow { background: rgba(250,204,109,0.1);  color: var(--accent4); border: 1px solid rgba(250,204,109,0.2); }
+  .b-pink   { background: rgba(250,109,138,0.1);  color: var(--accent2); border: 1px solid rgba(250,109,138,0.2); }
+
+  /* --- Tables --- */
+  .table-wrap { overflow-x: auto; margin: 1rem 0; border-radius: 8px; border: 1px solid var(--border); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+  th {
+    background: var(--surface2);
+    color: var(--muted);
+    font-weight: 500;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    vertical-align: top;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  td strong { color: var(--text); font-weight: 500; }
+
+  /* --- Two col grid --- */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0.75rem 0; }
+
+  .mini-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+  }
+
+  .mini-card h4 {
+    font-size: 12px;
+    font-weight: 500;
+    font-family: var(--mono);
+    color: var(--accent3);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .mini-card.warn h4 { color: var(--accent2); }
+
+  .mini-card p, .mini-card li { font-size: 13px; }
+
+  /* --- Example box --- */
+  .example {
+    background: linear-gradient(135deg, rgba(124,109,250,0.05), rgba(109,250,204,0.04));
+    border: 1px solid rgba(124,109,250,0.2);
+    border-radius: 8px;
+    padding: 1.1rem 1.25rem;
+    margin: 1rem 0;
+  }
+
+  .example-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+
+  .example p, .example li { font-size: 13px; }
+
+  /* --- Highlight --- */
+  mark {
+    background: rgba(250,204,109,0.15);
+    color: var(--accent4);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  /* --- Scrollbar --- */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+  /* --- Responsive --- */
+  @media (max-width: 768px) {
+    .sidebar { width: 100%; height: auto; position: relative; flex-direction: row; flex-wrap: wrap; }
+    .layout { flex-direction: column; }
+    .main { margin-left: 0; padding: 1.5rem 1rem; }
+    .grid2 { grid-template-columns: 1fr; }
+    .sidebar-header { display: none; }
+    nav { display: flex; flex-wrap: wrap; padding: 0.5rem; }
+    .nav-item { padding: 0.35rem 0.75rem; border-left: none; border-bottom: 2px solid transparent; font-size: 12px; }
+    .nav-item.active { border-bottom-color: var(--accent); border-left: none; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="tag">// Data Mining</div>
+      <h1>Ôn Tập<br>Khai Phá<br>Dữ Liệu</h1>
+      <p>9 chủ đề trọng tâm</p>
+    </div>
+    <nav>
+      <div class="nav-item active" onclick="show(0)"><span class="nav-num">01</span> Luật kết hợp & Apriori</div>
+      <div class="nav-item" onclick="show(1)"><span class="nav-num">02</span> Đánh giá phân lớp (tổng quát)</div>
+      <div class="nav-item" onclick="show(2)"><span class="nav-num">03</span> Đánh giá phân lớp (2 lớp)</div>
+      <div class="nav-item" onclick="show(3)"><span class="nav-num">04</span> Cây quyết định</div>
+      <div class="nav-item" onclick="show(4)"><span class="nav-num">05</span> Naive Bayes</div>
+      <div class="nav-item" onclick="show(5)"><span class="nav-num">06</span> Giải thuật Bayes</div>
+      <div class="nav-item" onclick="show(6)"><span class="nav-num">07</span> K-means</div>
+      <div class="nav-item" onclick="show(7)"><span class="nav-num">08</span> Phân cụm mật độ (DBSCAN)</div>
+      <div class="nav-item" onclick="show(8)"><span class="nav-num">09</span> Phân cụm phân cấp</div>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- ===== SECTION 1 ===== -->
+    <div class="section active" id="s0">
+      <div class="sec-header">
+        <div class="sec-num">// 01 — Association Rules</div>
+        <h2>Luật kết hợp<br>& Apriori</h2>
+        <p>Tìm các quy tắc dạng X → Y: nếu có X trong giao dịch, thường cũng có Y.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Các độ đo quan trọng</div>
+        <div class="formula">Support(X → Y)    = count(X ∪ Y) / N</div>
+        <div class="formula">Confidence(X → Y) = Support(X ∪ Y) / Support(X)</div>
+        <div class="formula warn">Lift(X → Y)       = Confidence(X → Y) / Support(Y)</div>
+        <ul style="margin-top:1rem">
+          <li><strong>Support</strong> — Tần suất xuất hiện cùng nhau trong toàn bộ tập dữ liệu</li>
+          <li><strong>Confidence</strong> — Xác suất có Y khi đã có X (độ tin cậy)</li>
+          <li><strong>Lift &gt; 1</strong>: tương quan dương &nbsp;|&nbsp; <strong>= 1</strong>: độc lập &nbsp;|&nbsp; <strong>&lt; 1</strong>: tương quan âm</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Giải thuật Apriori</div>
+        <p style="margin-bottom:1rem">Ý tưởng cốt lõi: <mark>Tính chất Apriori</mark> — mọi tập con của một frequent itemset cũng phải là frequent.</p>
+        <div class="steps">
+          <div class="step"><div class="step-n">1</div><div class="step-body">Quét CSDL, đếm support từng item đơn → giữ các item ≥ minSup → <strong>L₁</strong></div></div>
+          <div class="step"><div class="step-n">2</div><div class="step-body"><strong>Join:</strong> Sinh ứng viên Cₖ từ Lₖ₋₁ bằng cách ghép hai itemset có (k-2) phần tử đầu giống nhau</div></div>
+          <div class="step"><div class="step-n">3</div><div class="step-body"><strong>Prune:</strong> Loại bỏ ứng viên trong Cₖ nếu có tập con (k-1) phần tử không thuộc Lₖ₋₁</div></div>
+          <div class="step"><div class="step-n">4</div><div class="step-body">Quét CSDL đếm support của từng ứng viên trong Cₖ → lọc ra <strong>Lₖ</strong></div></div>
+          <div class="step"><div class="step-n">5</div><div class="step-body">Lặp 2–4 cho đến khi Lₖ rỗng. Kết quả: L = L₁ ∪ L₂ ∪ … ∪ Lₖ</div></div>
+          <div class="step"><div class="step-n">6</div><div class="step-body"><strong>Sinh luật:</strong> Với mỗi frequent itemset, thử mọi cách tách X → Y; giữ luật có Confidence ≥ minConf</div></div>
+        </div>
+
+        <div class="example">
+          <div class="example-label">// Ví dụ — 5 giao dịch, minSup=60%, minConf=80%</div>
+          <div class="table-wrap" style="margin:0.5rem 0">
+            <table>
+              <tr><th>TID</th><th>Items</th></tr>
+              <tr><td>T1</td><td>A, B, C</td></tr>
+              <tr><td>T2</td><td>A, C</td></tr>
+              <tr><td>T3</td><td>A, B</td></tr>
+              <tr><td>T4</td><td>A, B, C</td></tr>
+              <tr><td>T5</td><td>B, C</td></tr>
+            </table>
+          </div>
+          <p>→ <strong>L₁:</strong> A(4), B(4), C(4) — tất cả ≥ 3/5 = 60% ✓</p>
+          <p>→ <strong>L₂:</strong> {A,B}(3), {A,C}(3), {B,C}(3) — sup = 60% ✓</p>
+          <p>→ <strong>L₃:</strong> {A,B,C}(2) — sup = 40% < 60% → loại ✗</p>
+          <p style="margin-top:0.5rem">→ Từ {A,C}: <strong>C→A</strong> conf=3/3=100% ✓ &nbsp; | &nbsp; A→C conf=3/4=75% ✗</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SECTION 2 ===== -->
+    <div class="section" id="s1">
+      <div class="sec-header">
+        <div class="sec-num">// 02 — Classification Evaluation</div>
+        <h2>Đánh giá mô hình<br>phân lớp (Tổng quát)</h2>
+        <p>Đánh giá hiệu năng mô hình với K lớp bất kỳ.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Ma trận nhầm lẫn & Accuracy</div>
+        <p>Ma trận K×K: hàng = thực tế, cột = dự đoán. Phần tử mᵢⱼ = số mẫu lớp i bị dự đoán là j.</p>
+        <div class="formula">Accuracy  = Σᵢ mᵢᵢ / Σᵢⱼ mᵢⱼ</div>
+        <div class="formula pink">Error Rate = 1 − Accuracy</div>
+
+        <h3>Độ đo cho từng lớp i</h3>
+        <div class="formula">Precisionᵢ = mᵢᵢ / Σⱼ mⱼᵢ  &nbsp;&nbsp; (cột i)</div>
+        <div class="formula">Recallᵢ    = mᵢᵢ / Σⱼ mᵢⱼ  &nbsp;&nbsp; (hàng i)</div>
+        <div class="formula warn">F1ᵢ = 2 × Pᵢ × Rᵢ / (Pᵢ + Rᵢ)</div>
+
+        <h3>Trung bình hóa</h3>
+        <ul>
+          <li><span class="badge b-purple">Macro-avg</span> Trung bình số học — coi mọi lớp bằng nhau</li>
+          <li><span class="badge b-green">Weighted-avg</span> Trung bình có trọng số theo số mẫu từng lớp — phù hợp dữ liệu mất cân bằng</li>
+          <li><span class="badge b-yellow">Micro-avg</span> Tổng TP, FP, FN rồi tính — bị ảnh hưởng bởi lớp lớn</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Phương pháp đánh giá</div>
+        <div class="grid2">
+          <div class="mini-card">
+            <h4>Holdout</h4>
+            <p>Chia train/test (70/30 hay 80/20). Nhanh nhưng phụ thuộc vào cách chia ngẫu nhiên.</p>
+          </div>
+          <div class="mini-card">
+            <h4>K-Fold Cross Validation</h4>
+            <p>Chia k phần bằng nhau, lần lượt dùng 1 phần test, k-1 phần train. Lấy trung bình. k=10 phổ biến.</p>
+          </div>
+          <div class="mini-card">
+            <h4>Leave-One-Out (LOO)</h4>
+            <p>K-Fold với k = n. Chính xác nhưng rất chậm với dữ liệu lớn.</p>
+          </div>
+          <div class="mini-card">
+            <h4>Bootstrap</h4>
+            <p>Lấy mẫu lặp lại n lần có hoàn lại. ~63.2% mẫu gốc được chọn, còn lại làm test.</p>
+          </div>
+        </div>
+
+        <h3>Kiểm định thống kê (Paired t-test)</h3>
+        <div class="formula">t = (mean₁ − mean₂) / √(σ₁²/k + σ₂²/k)</div>
+        <p>Nếu |t| &gt; t_{α/2, k−1} thì khác biệt giữa hai mô hình có ý nghĩa thống kê.</p>
+      </div>
+    </div>
+
+    <!-- ===== SECTION 3 ===== -->
+    <div class="section" id="s2">
+      <div class="sec-header">
+        <div class="sec-num">// 03 — Binary Classification</div>
+        <h2>Đánh giá phân lớp<br>khi số lớp = 2</h2>
+        <p>Phân tích chi tiết hơn với confusion matrix 2×2, ROC, AUC.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Confusion Matrix 2×2</div>
+        <div class="table-wrap">
+          <table>
+            <tr><th></th><th>Dự đoán Positive</th><th>Dự đoán Negative</th></tr>
+            <tr><td><strong>Thực tế Positive</strong></td><td><span class="badge b-green">TP — True Positive</span></td><td><span class="badge b-pink">FN — False Negative</span></td></tr>
+            <tr><td><strong>Thực tế Negative</strong></td><td><span class="badge b-pink">FP — False Positive</span></td><td><span class="badge b-green">TN — True Negative</span></td></tr>
+          </table>
+        </div>
+        <div class="grid2" style="margin-top:0.75rem">
+          <div>
+            <div class="formula">Accuracy    = (TP+TN) / (TP+FP+FN+TN)</div>
+            <div class="formula">Precision   = TP / (TP+FP)</div>
+            <div class="formula">Recall(TPR) = TP / (TP+FN)</div>
+          </div>
+          <div>
+            <div class="formula warn">F1 = 2·TP / (2·TP+FP+FN)</div>
+            <div class="formula">Specificity = TN / (TN+FP)</div>
+            <div class="formula pink">FPR = FP / (FP+TN)</div>
+          </div>
+        </div>
+        <div class="formula">F-β = (1+β²)·P·R / (β²·P + R) &nbsp; — β&gt;1: ưu Recall; β&lt;1: ưu Precision</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Đường cong ROC & AUC</div>
+        <p>ROC vẽ <strong>TPR (Recall)</strong> (trục Y) theo <strong>FPR</strong> (trục X) khi ngưỡng thay đổi từ 1 → 0.</p>
+        <ul style="margin-top:0.75rem">
+          <li>Điểm (0, 1): mô hình hoàn hảo</li>
+          <li>Đường chéo y = x: mô hình phân loại ngẫu nhiên</li>
+          <li><span class="badge b-purple">AUC = 1</span> Hoàn hảo &nbsp; <span class="badge b-yellow">AUC = 0.5</span> Ngẫu nhiên &nbsp; <span class="badge b-pink">AUC &lt; 0.5</span> Tệ hơn ngẫu nhiên</li>
+        </ul>
+        <h3>PR Curve (Precision-Recall)</h3>
+        <p>Phù hợp hơn ROC khi dữ liệu <strong>mất cân bằng</strong>. Tốt khi đường cong góc trên phải.</p>
+        <div class="formula warn">AP = Σₙ (Rₙ − Rₙ₋₁) × Pₙ</div>
+
+        <h3>Khi nào dùng chỉ số nào?</h3>
+        <div class="table-wrap">
+          <table>
+            <tr><th>Bài toán</th><th>Ưu tiên</th><th>Lý do</th></tr>
+            <tr><td>Phát hiện ung thư, gian lận</td><td><span class="badge b-green">Recall</span></td><td>Giảm FN (bỏ sót nguy hiểm)</td></tr>
+            <tr><td>Lọc spam</td><td><span class="badge b-purple">Precision</span></td><td>Giảm FP (nhầm thư quan trọng)</td></tr>
+            <tr><td>Dữ liệu cân bằng</td><td><span class="badge b-yellow">Accuracy, F1</span></td><td>Cân bằng cả hai chiều sai</td></tr>
+            <tr><td>Dữ liệu mất cân bằng</td><td><span class="badge b-pink">AUC, PR curve</span></td><td>Accuracy gây hiểu lầm</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SECTION 4 ===== -->
+    <div class="section" id="s3">
+      <div class="sec-header">
+        <div class="sec-num">// 04 — Decision Tree</div>
+        <h2>Giải thuật<br>Cây quyết định</h2>
+        <p>ID3, C4.5, CART — phân lớp bằng cách chia tập dữ liệu theo thuộc tính tốt nhất.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Thuật toán tổng quát (Recursive)</div>
+        <div class="steps">
+          <div class="step"><div class="step-n">1</div><div class="step-body">Nếu tất cả mẫu cùng lớp → tạo <strong>nút lá</strong>, gán nhãn lớp đó</div></div>
+          <div class="step"><div class="step-n">2</div><div class="step-body">Tính độ đo phân chia (Entropy/Gini) cho từng thuộc tính</div></div>
+          <div class="step"><div class="step-n">3</div><div class="step-body">Chọn thuộc tính tốt nhất (gain lớn nhất) làm <strong>nút quyết định</strong></div></div>
+          <div class="step"><div class="step-n">4</div><div class="step-body">Phân chia tập dữ liệu theo các giá trị thuộc tính đã chọn</div></div>
+          <div class="step"><div class="step-n">5</div><div class="step-body">Đệ quy xây dựng cây con cho từng nhánh</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Các độ đo phân chia</div>
+        <h3>Entropy & Information Gain — ID3</h3>
+        <div class="formula">Entropy(S)         = −Σᵢ pᵢ · log₂(pᵢ)</div>
+        <div class="formula">InfoGain(S, A)     = Entropy(S) − Σᵥ |Sᵥ|/|S| · Entropy(Sᵥ)</div>
+
+        <h3>Gain Ratio — C4.5 (sửa thiên lệch nhiều giá trị)</h3>
+        <div class="formula warn">GainRatio(S, A)   = InfoGain(S, A) / SplitInfo(S, A)</div>
+        <div class="formula warn">SplitInfo(S, A)   = −Σᵥ |Sᵥ|/|S| · log₂(|Sᵥ|/|S|)</div>
+
+        <h3>Chỉ số Gini — CART</h3>
+        <div class="formula pink">Gini(S)           = 1 − Σᵢ pᵢ²</div>
+        <div class="formula pink">GiniGain(S, A)    = Gini(S) − Σᵥ |Sᵥ|/|S| · Gini(Sᵥ)</div>
+        <p>Gini = 0: thuần khiết hoàn toàn &nbsp;|&nbsp; Gini tối đa = 1 − 1/K với K lớp</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Cắt tỉa cây (Pruning)</div>
+        <div class="grid2">
+          <div class="mini-card">
+            <h4>Pre-pruning</h4>
+            <p>Dừng sớm khi: số mẫu &lt; ngưỡng, gain &lt; ε, độ sâu vượt giới hạn. Đơn giản nhưng có thể bỏ sót cấu trúc quan trọng.</p>
+          </div>
+          <div class="mini-card warn">
+            <h4>Post-pruning</h4>
+            <p>Xây cây đầy đủ rồi cắt nhánh. Thay nhánh bằng lá nếu không tăng lỗi trên tập validation. Chính xác hơn.</p>
+          </div>
+        </div>
+        <h3>Chi phí-Độ phức tạp (Cost Complexity Pruning)</h3>
+        <div class="formula">Cost(T) = Error(T) + α × |leaves(T)|</div>
+        <p>α lớn → cây đơn giản hơn. Chọn α tối ưu qua cross-validation.</p>
+      </div>
+    </div>
+
+    <!-- ===== SECTION 5 ===== -->
+    <div class="section" id="s4">
+      <div class="sec-header">
+        <div class="sec-num">// 05 — Naive Bayes</div>
+        <h2>Giải thuật<br>Naive Bayes</h2>
+        <p>Phân lớp xác suất với giả định độc lập có điều kiện giữa các đặc trưng.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Công thức cốt lõi</div>
+        <p style="margin-bottom:0.75rem">Giả định: các thuộc tính <mark>độc lập với nhau</mark> khi biết lớp C.</p>
+        <div class="formula">P(C | X) ∝ P(C) · Π P(xᵢ | C)</div>
+        <div class="formula warn">ŷ = argmax_C [ P(C) · Π P(xᵢ | C) ]</div>
+
+        <h3>Thuộc tính rời rạc</h3>
+        <div class="formula">P(xᵢ = v | C) = count(xᵢ=v, C) / count(C)</div>
+
+        <h3>Làm mịn Laplace (tránh xác suất = 0)</h3>
+        <div class="formula pink">P(xᵢ = v | C) = (count(xᵢ=v, C) + 1) / (count(C) + |Vᵢ|)</div>
+        <p>|Vᵢ| = số giá trị phân biệt của thuộc tính xᵢ</p>
+
+        <h3>Thuộc tính liên tục — Gaussian NB</h3>
+        <div class="formula">P(xᵢ = v | C) = (1/√(2πσ²)) · exp(−(v − μ)² / (2σ²))</div>
+        <p>Ước lượng μ và σ² từ tập training cho từng cặp (lớp C, thuộc tính i).</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Đánh giá</div>
+        <div class="grid2">
+          <div class="mini-card">
+            <h4>✓ Ưu điểm</h4>
+            <ul>
+              <li>Đơn giản, nhanh, ít dữ liệu train</li>
+              <li>Hiệu quả với dữ liệu nhiều chiều</li>
+              <li>Dễ cập nhật (online learning)</li>
+              <li>Chịu nhiễu tốt</li>
+            </ul>
+          </div>
+          <div class="mini-card warn">
+            <h4>✗ Nhược điểm</h4>
+            <ul>
+              <li>Giả định độc lập thường sai</li>
+              <li>Kém khi thuộc tính tương quan mạnh</li>
+              <li>Không học được tương tác giữa features</li>
+            </ul>
+          </div>
+        </div>
+        <div class="example">
+          <div class="example-label">// Ứng dụng điển hình</div>
+          <p>Lọc spam email · Phân loại văn bản · Chẩn đoán y tế · Phân tích cảm xúc (Sentiment Analysis)</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SECTION 6 ===== -->
+    <div class="section" id="s5">
+      <div class="sec-header">
+        <div class="sec-num">// 06 — Bayes Classifier</div>
+        <h2>Giải thuật Bayes<br>(Bayes Optimal)</h2>
+        <p>Bộ phân lớp tối ưu lý thuyết — không có giả định nào thêm về cấu trúc dữ liệu.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Định lý Bayes</div>
+        <div class="formula">P(C | X) = P(X | C) · P(C) / P(X)</div>
+        <ul style="margin-top:0.75rem">
+          <li><strong>P(C)</strong> — Prior: xác suất tiên nghiệm của lớp C</li>
+          <li><strong>P(X | C)</strong> — Likelihood: xác suất quan sát X khi biết lớp C</li>
+          <li><strong>P(C | X)</strong> — Posterior: xác suất lớp C sau khi quan sát X</li>
+          <li><strong>P(X)</strong> — Evidence: hằng số chuẩn hóa (có thể bỏ khi so sánh)</li>
+        </ul>
+
+        <h3>Phân lớp MAP (Maximum A Posteriori)</h3>
+        <div class="formula">ŷ_MAP = argmax_C P(C | X) = argmax_C P(X | C) · P(C)</div>
+
+        <h3>Phân lớp MLE (khi P(C) bằng nhau)</h3>
+        <div class="formula warn">ŷ_MLE = argmax_C P(X | C)</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Bayes Error & So sánh với Naive Bayes</div>
+        <div class="formula pink">Bayes Error = 1 − E_X[max_C P(C | X)]</div>
+        <p>Đây là <mark>sàn lỗi lý thuyết</mark> — không mô hình nào vượt qua được với tập feature cho trước.</p>
+        <div class="table-wrap" style="margin-top:1rem">
+          <table>
+            <tr><th>Tiêu chí</th><th>Bayes đầy đủ</th><th>Naive Bayes</th></tr>
+            <tr><td>Giả định</td><td>Không giả định thêm</td><td>Độc lập có điều kiện</td></tr>
+            <tr><td>P(X | C)</td><td>Phân phối kết hợp đầy đủ</td><td>Tích các phân phối đơn</td></tr>
+            <tr><td>Yêu cầu dữ liệu</td><td>Rất nhiều</td><td>Ít</td></tr>
+            <tr><td>Tính toán</td><td>Phức tạp, khó khả thi</td><td>Đơn giản, nhanh</td></tr>
+            <tr><td>Hiệu năng lý thuyết</td><td>Tối ưu</td><td>Gần tối ưu khi ĐL đúng</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SECTION 7 ===== -->
+    <div class="section" id="s6">
+      <div class="sec-header">
+        <div class="sec-num">// 07 — K-means Clustering</div>
+        <h2>Giải thuật<br>K-means</h2>
+        <p>Phân cụm phẳng, lặp gán–cập nhật cho đến hội tụ. Tối thiểu WCSS.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Thuật toán</div>
+        <div class="steps">
+          <div class="step"><div class="step-n">1</div><div class="step-body">Chọn K điểm ngẫu nhiên làm centroid khởi tạo μ₁, μ₂, …, μₖ</div></div>
+          <div class="step"><div class="step-n">2</div><div class="step-body"><strong>Assignment:</strong> Mỗi điểm xᵢ → cụm c* = argmin_c ||xᵢ − μc||²</div></div>
+          <div class="step"><div class="step-n">3</div><div class="step-body"><strong>Update:</strong> Tính lại centroid μc = (1/|Cc|) · Σ_{xᵢ∈Cc} xᵢ</div></div>
+          <div class="step"><div class="step-n">4</div><div class="step-body">Lặp lại 2–3 cho đến khi centroid không thay đổi (hoặc |Δμ| &lt; ε)</div></div>
+        </div>
+        <div class="formula">J = Σc Σ_{x∈Cc} ||x − μc||² &nbsp;&nbsp; (WCSS — hàm mục tiêu)</div>
+        <p>K-means đảm bảo J giảm sau mỗi bước nhưng có thể kẹt cực tiểu cục bộ.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Chọn K & Biến thể</div>
+        <h3>Elbow Method</h3>
+        <p>Vẽ đồ thị WCSS theo K. Chọn K tại "khuỷu tay" — điểm WCSS giảm chậm lại rõ rệt.</p>
+
+        <h3>Silhouette Score</h3>
+        <div class="formula">s(i) = (b(i) − a(i)) / max(a(i), b(i))</div>
+        <ul>
+          <li><strong>a(i)</strong>: khoảng cách TB từ i đến các điểm cùng cụm</li>
+          <li><strong>b(i)</strong>: khoảng cách TB từ i đến cụm lân cận gần nhất</li>
+          <li>s ∈ [−1, 1]: gần 1 = tốt | gần 0 = biên giới | âm = sai cụm</li>
+        </ul>
+
+        <h3>K-means++</h3>
+        <p>Khởi tạo thông minh: centroid tiếp theo chọn theo xác suất tỉ lệ với khoảng cách bình phương đến centroid gần nhất đã chọn. Giảm đáng kể khả năng kẹt cực tiểu cục bộ.</p>
+
+        <div class="grid2" style="margin-top:0.75rem">
+          <div class="mini-card">
+            <h4>✓ Ưu điểm</h4>
+            <ul>
+              <li>Đơn giản, nhanh O(nKd·iter)</li>
+              <li>Hiệu quả với dữ liệu lớn</li>
+              <li>Dễ hiểu, dễ cài đặt</li>
+            </ul>
+          </div>
+          <div class="mini-card warn">
+            <h4>✗ Nhược điểm</h4>
+            <ul>
+              <li>Phải biết trước K</li>
+              <li>Nhạy với khởi tạo và ngoại lệ</li>
+              <li>Cụm phải hình cầu, kích thước tương đương</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SECTION 8 ===== -->
+    <div class="section" id="s7">
+      <div class="sec-header">
+        <div class="sec-num">// 08 — Density-Based Clustering</div>
+        <h2>Phân cụm dựa<br>trên mật độ (DBSCAN)</h2>
+        <p>Density-Based Spatial Clustering of Applications with Noise.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Tham số & Phân loại điểm</div>
+        <div class="grid2">
+          <div class="mini-card">
+            <h4>ε (epsilon)</h4>
+            <p>Bán kính lân cận. Điểm q là lân cận của p nếu d(p, q) ≤ ε.</p>
+          </div>
+          <div class="mini-card">
+            <h4>MinPts</h4>
+            <p>Số điểm tối thiểu trong vùng ε-lân cận để một điểm là core point.</p>
+          </div>
+        </div>
+        <div class="table-wrap" style="margin-top:0.75rem">
+          <table>
+            <tr><th>Loại</th><th>Định nghĩa</th></tr>
+            <tr><td><span class="badge b-purple">Core point</span></td><td>|N_ε(p)| ≥ MinPts — vùng ε-lân cận có ít nhất MinPts điểm</td></tr>
+            <tr><td><span class="badge b-green">Border point</span></td><td>Không phải core, nhưng nằm trong N_ε của một core point</td></tr>
+            <tr><td><span class="badge b-pink">Noise point</span></td><td>Không phải core, không nằm trong N_ε của core point nào</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Giải thuật DBSCAN</div>
+        <div class="steps">
+          <div class="step"><div class="step-n">1</div><div class="step-body">Đánh dấu tất cả điểm là <strong>chưa thăm</strong></div></div>
+          <div class="step"><div class="step-n">2</div><div class="step-body">Chọn điểm p chưa thăm, đánh dấu đã thăm. Tính N_ε(p)</div></div>
+          <div class="step"><div class="step-n">3</div><div class="step-body">Nếu |N_ε(p)| &lt; MinPts → đánh p là <strong>noise</strong> (tạm thời)</div></div>
+          <div class="step"><div class="step-n">4</div><div class="step-body">Nếu |N_ε(p)| ≥ MinPts → p là <strong>core point</strong>, tạo cụm C mới. Thêm N_ε(p) vào hàng đợi Q</div></div>
+          <div class="step"><div class="step-n">5</div><div class="step-body">Với mỗi q trong Q: thêm q vào C; nếu q cũng là core → thêm N_ε(q) chưa thăm vào Q</div></div>
+          <div class="step"><div class="step-n">6</div><div class="step-body">Lặp 2–5 đến hết điểm. Complexity: O(n log n) với chỉ mục không gian</div></div>
+        </div>
+
+        <div class="grid2" style="margin-top:0.75rem">
+          <div class="mini-card">
+            <h4>✓ Ưu điểm</h4>
+            <ul>
+              <li>Không cần biết trước K</li>
+              <li>Cụm hình dạng tùy ý (phi cầu)</li>
+              <li>Tự động phát hiện nhiễu/outlier</li>
+              <li>Bất biến với thứ tự dữ liệu</li>
+            </ul>
+          </div>
+          <div class="mini-card warn">
+            <h4>✗ Nhược điểm</h4>
+            <ul>
+              <li>Nhạy cảm với ε và MinPts</li>
+              <li>Kém với dữ liệu nhiều chiều</li>
+              <li>Khó khi mật độ cụm khác nhau (→ OPTICS)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SECTION 9 ===== -->
+    <div class="section" id="s8">
+      <div class="sec-header">
+        <div class="sec-num">// 09 — Hierarchical Clustering</div>
+        <h2>Phân cụm<br>phân cấp</h2>
+        <p>Xây dựng cây phân cấp (dendrogram) của các cụm, linh hoạt chọn K sau.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Hai hướng tiếp cận</div>
+        <div class="grid2">
+          <div class="mini-card">
+            <h4>Agglomerative (Bottom-up)</h4>
+            <p>Bắt đầu từ n cụm (mỗi điểm 1 cụm), lần lượt gộp 2 cụm gần nhất cho đến khi còn 1 cụm. <span class="badge b-green">Phổ biến hơn</span></p>
+          </div>
+          <div class="mini-card warn">
+            <h4>Divisive (Top-down)</h4>
+            <p>Bắt đầu từ 1 cụm chứa tất cả, lần lượt tách thành các cụm con cho đến khi mỗi điểm là 1 cụm.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Các phương pháp Linkage</div>
+        <div class="table-wrap">
+          <table>
+            <tr><th>Linkage</th><th>d(Cᵢ, Cⱼ)</th><th>Đặc điểm</th></tr>
+            <tr><td><strong>Single</strong></td><td>min_{x∈Cᵢ, y∈Cⱼ} d(x,y)</td><td>Chaining effect — chuỗi dài</td></tr>
+            <tr><td><strong>Complete</strong></td><td>max_{x∈Cᵢ, y∈Cⱼ} d(x,y)</td><td>Cụm nhỏ, tròn đều</td></tr>
+            <tr><td><strong>Average</strong></td><td>(1/|Cᵢ||Cⱼ|) Σ d(x,y)</td><td>Cân bằng giữa single/complete</td></tr>
+            <tr><td><strong>Centroid</strong></td><td>||μᵢ − μⱼ||</td><td>Khoảng cách giữa tâm cụm</td></tr>
+            <tr><td><strong>Ward</strong> <span class="badge b-green">★</span></td><td>Tăng WCSS khi gộp</td><td>Phổ biến nhất, cụm đồng đều</td></tr>
+          </table>
+        </div>
+        <div class="formula warn">Ward: Δ(Cᵢ, Cⱼ) = (|Cᵢ|·|Cⱼ|)/(|Cᵢ|+|Cⱼ|) · ||μᵢ − μⱼ||²</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Dendrogram & Độ phức tạp</div>
+        <p>Dendrogram là cây phân cấp thể hiện quá trình gộp. Trục Y = khoảng cách (hoặc độ không đồng nhất) tại thời điểm gộp.</p>
+        <ul style="margin-top:0.75rem">
+          <li>Cắt ngang dendrogram ở ngưỡng d → số cụm K = số nhánh bị cắt</li>
+          <li>Chọn ngưỡng tại <strong>"khoảng nhảy lớn"</strong> trên trục Y</li>
+          <li>Linh hoạt — có thể chọn K bất kỳ sau khi chạy xong</li>
+        </ul>
+        <div class="formula">Complexity: O(n² log n) — cần ma trận khoảng cách n×n → không hiệu quả với n &gt; 10.000</div>
+
+        <div class="grid2" style="margin-top:0.75rem">
+          <div class="mini-card">
+            <h4>✓ Ưu điểm</h4>
+            <ul>
+              <li>Không cần chọn K trước</li>
+              <li>Dendrogram trực quan, dễ hiểu</li>
+              <li>Linh hoạt nhiều linkage</li>
+            </ul>
+          </div>
+          <div class="mini-card warn">
+            <h4>✗ Nhược điểm</h4>
+            <ul>
+              <li>O(n²) bộ nhớ và thời gian</li>
+              <li>Không hoàn tác quyết định gộp</li>
+              <li>Nhạy cảm với nhiễu và outlier</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  const sections = document.querySelectorAll('.section');
+  const navItems = document.querySelectorAll('.nav-item');
+
+  function show(idx) {
+    sections.forEach((s, i) => s.classList.toggle('active', i === idx));
+    navItems.forEach((n, i) => n.classList.toggle('active', i === idx));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
